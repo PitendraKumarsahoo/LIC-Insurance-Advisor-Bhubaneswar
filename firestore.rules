@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdvisor() {
+      return isSignedIn() &&
+        request.auth.token.email_verified == true &&
+        request.auth.token.email == 'pitendrakumarsahoo52@gmail.com';
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['name', 'phone', 'city', 'status', 'consentWhatsapp']) &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.phone is string && data.phone.size() >= 8 && data.phone.size() <= 20 &&
+        data.city is string && data.city.size() > 0 && data.city.size() <= 100 &&
+        data.status in ['pending', 'in_progress', 'contacted', 'completed'] &&
+        data.consentWhatsapp is bool &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+        (!('planCategory' in data) || (data.planCategory is string && data.planCategory.size() <= 50)) &&
+        (!('planName' in data) || (data.planName is string && data.planName.size() <= 100)) &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 1000)) &&
+        (!('preferredTime' in data) || (data.preferredTime is string && data.preferredTime.size() <= 50));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+        data.uid is string && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() <= 128 &&
+        data.role in ['client', 'advisor'] &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100));
+    }
+
+    function isValidSavedQuote(data) {
+      return data.keys().hasAll(['userId', 'calculatorType', 'summary']) &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.calculatorType is string && data.calculatorType.size() <= 50 &&
+        data.summary is string && data.summary.size() <= 200;
+    }
+
+    // Leads & Inquiries
+    match /leads/{leadId} {
+      allow create: if isValidId(leadId) &&
+        isValidLead(incoming()) &&
+        (
+          !('userId' in incoming()) ||
+          incoming().userId == 'guest' ||
+          (isSignedIn() && incoming().userId == request.auth.uid)
+        );
+
+      allow get: if isValidId(leadId) && (
+        isAdvisor() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid)
+      );
+
+      allow list: if isAdvisor() || (
+        isSignedIn() && resource.data.userId == request.auth.uid
+      );
+
+      allow update: if isValidId(leadId) && isAdvisor() &&
+        isValidLead(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'notes']);
+
+      allow delete: if isValidId(leadId) && isAdvisor();
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (
+        isAdvisor() || (isSignedIn() && request.auth.uid == userId)
+      );
+
+      allow create: if isValidId(userId) &&
+        isSignedIn() &&
+        request.auth.uid == userId &&
+        isValidUser(incoming()) &&
+        incoming().role == 'client'; // Prevent users from self-promoting to advisor
+
+      allow update: if isValidId(userId) &&
+        isSignedIn() &&
+        request.auth.uid == userId &&
+        isValidUser(incoming()) &&
+        incoming().role == existing().role && // Prevent privilege escalation
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+
+      allow delete: if false;
+    }
+
+    // Saved quotes & calculation summaries
+    match /saved_quotes/{quoteId} {
+      allow get: if isValidId(quoteId) && isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdvisor()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdvisor()
+      );
+
+      allow create: if isValidId(quoteId) &&
+        isSignedIn() &&
+        incoming().userId == request.auth.uid &&
+        isValidSavedQuote(incoming());
+
+      allow delete: if isValidId(quoteId) &&
+        isSignedIn() &&
+        resource.data.userId == request.auth.uid;
+
+      allow update: if false;
+    }
+  }
+}

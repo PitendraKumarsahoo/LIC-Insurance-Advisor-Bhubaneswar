@@ -1,0 +1,8 @@
+{
+  "name": "LIC Insurance Advisor Bhubaneswar",
+  "description": "Authorized IRDAI Life Insurance Advisor in Bhubaneswar, Odisha. Professional guidance on LIC Term Insurance, Savings, Child Education, and Pension plans.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

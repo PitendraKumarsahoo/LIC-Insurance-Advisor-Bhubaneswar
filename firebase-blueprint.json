@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "lead": {
+      "title": "Lead",
+      "description": "Insurance inquiry or consultation request submitted by a prospective client",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "age": {
+          "type": "number"
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "planCategory": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "planName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "preferredTime": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "contacted", "completed"]
+        },
+        "consentWhatsapp": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["name", "phone", "city", "status", "consentWhatsapp"]
+    },
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "User profile with email and role",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "enum": ["client", "advisor"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "savedQuote": {
+      "title": "SavedQuote",
+      "description": "Saved insurance calculator estimate or comparison",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userEmail": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "calculatorType": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "inputs": {
+          "type": "object"
+        },
+        "results": {
+          "type": "object"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "calculatorType", "summary"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": {
+        "$ref": "#/entities/lead"
+      },
+      "description": "Collection of prospective client consultations and quote requests"
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/userProfile"
+      },
+      "description": "User profiles for authenticated visitors and the advisor"
+    },
+    "/saved_quotes/{quoteId}": {
+      "schema": {
+        "$ref": "#/entities/savedQuote"
+      },
+      "description": "Saved quotes and insurance calculation summaries created by users"
+    }
+  }
+}
